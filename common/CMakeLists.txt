@@ -90,6 +90,8 @@ add_library(${TARGET}
     ngram-map.h
     ngram-mod.cpp
     ngram-mod.h
+    llama_mmproj_pool.cpp
+    llama_mmproj_pool.h
     peg-parser.cpp
     peg-parser.h
     preset.cpp
@@ -122,7 +124,7 @@ set_target_properties(${TARGET} PROPERTIES
     MACHO_CURRENT_VERSION 0 # keep macOS linker from seeing oversized version number
 )
 
-target_include_directories(${TARGET} PUBLIC . ../vendor)
+target_include_directories(${TARGET} PUBLIC . ../vendor ../src)
 target_compile_features   (${TARGET} PUBLIC cxx_std_17)
 
 if (BUILD_SHARED_LIBS)
