@@ -1,3 +1,32 @@
+
+### PR Title
+`feat: Transient VRAM Leasing for mmproj via LLM layer eviction (--mmproj-swap-layers)`
+
+### PR Description
+
+This PR introduces the "Transient VRAM Leasing" mechanism for multimodal models. It allows users to temporarily evict a specific number of LLM layers to system RAM (CPU) to make room for the vision model (`mmproj`), and instantly restores them once the image processing is complete.
+
+#### 🌟 Why it's useful (Real-world scenarios)
+Keeping the vision/audio encoder in VRAM permanently is wasteful, especially when users max out their VRAM with a large LLM and KV cache. This feature acts as a game-changer for users with limited VRAM:
+
+1. **Solving the OOM Deadlock:** If a user allocates 100% of their VRAM to the model and KV cache, loading `mmproj` into the GPU normally causes an immediate OOM. This feature safely creates the required space on-the-fly.
+2. **Desktop Multitasking:** Most users run local models alongside other apps (browsers, IDEs, games). Releasing ~1.5GB of VRAM back to the OS between sporadic image inputs makes the entire PC run much smoother.
+3. **Preventing VRAM Thrashing:** When VRAM is completely full, Nvidia's driver might randomly push critical LLM weights or KV cache to system RAM, making text generation painfully slow. By leasing VRAM only exactly when needed, we ensure text generation speed stays fast.
+
+#### ⚙️ Technical Details
+* **Auto-Detection & Calibration (`N = -1`)**: Instead of guessing, the pool can dynamically probe the exact footprint of the vision model (Weights + Compute Buffer dynamic overhead) and calculate the precise number of trailing LLM layers to evict.
+* **PCIe Full-Duplex Pipelining**: The `swap_in` process utilizes a pipelined multi-threading approach. While layer $i$ is being read back to host RAM (D2H), the vision tensors mapped to layer $i-1$ are concurrently written to VRAM (H2D). This maximizes PCIe bandwidth and strictly prevents VRAM data corruption.
+* **Robust Bin-Packing**: The evicted LLM tensor spaces are treated as memory blocks. The vision tensors are sorted and bin-packed into these blocks using `ggml_backend_tensor_rebind`, eliminating VRAM fragmentation issues.
+* **RAII & Exception Safety**: Integrated an `MmprojSwapGuard` in `server-context.cpp` to ensure that even if the `mtmd_batch_encode` fails or throws an exception, the evicted LLM layers are guaranteed to be swapped back, preventing the server state from corrupting.
+
+#### 🚀 Usage
+Added a new CLI argument: `--mmproj-swap-layers N`
+* `0` = Disabled (Default behavior).
+* `N > 0` = Evict exactly `N` layers from the end of the LLM.
+* `-1` = **Auto-detect**. Automatically calculates and evicts the minimum number of layers required based on your free VRAM and the vision model's size.
+
+*(Note: If `--no-mmproj-offload` is active, the swap pool is forcefully disabled to prevent conflicts).*
+
 # llama.cpp
 
 ![llama](https://raw.githubusercontent.com/ggml-org/llama.brand/refs/heads/master/cover/llama-cpp/cover-llama-cpp-dark.svg)
