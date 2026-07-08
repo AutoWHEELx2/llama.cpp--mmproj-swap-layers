@@ -1,3 +1,6 @@
+### PR Title 3
+`llama : accelerate MoE expert transfers with mmap pinning and prefetch overlap` - https://github.com/thecodacus/llama.cpp
+
 ### PR Title 2
 `server: persist context checkpoints in a sidecar file for slot save/restore` - https://github.com/TheTom/llama-cpp-turboquant/pull/206
 
