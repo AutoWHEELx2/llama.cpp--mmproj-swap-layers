@@ -1,5 +1,7 @@
+### PR Title 2
+`server: persist context checkpoints in a sidecar file for slot save/restore` - https://github.com/TheTom/llama-cpp-turboquant/pull/206
 
-### PR Title
+### PR Title 1
 `feat: Transient VRAM Leasing for mmproj via LLM layer eviction (--mmproj-swap-layers)`
 
 ### PR Description
